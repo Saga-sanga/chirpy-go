@@ -10,7 +10,7 @@ func handleValidateChirp(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}
 	type returnVals struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -26,8 +26,11 @@ func handleValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
+	cleaned := profaneCheck(params.Body, profaneWords)
+
 	respondWithJSON(w, http.StatusOK, returnVals{
-		Valid: true,
+		CleanedBody: cleaned,
 	})
 
 }
