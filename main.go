@@ -15,7 +15,7 @@ import (
 type apiConfig struct {
 	// atomic.Int32 helps us safely increment and read across multiple goroutines
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
 }
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+		log.Fatalf("Failed to connect database: %s", err)
 	}
 
 	dbQueries := database.New(db)
@@ -34,7 +34,7 @@ func main() {
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		dbQueries:      dbQueries,
+		db:             dbQueries,
 	}
 
 	fsHandler := http.FileServer(http.Dir(filepathRoot))
