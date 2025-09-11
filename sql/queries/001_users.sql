@@ -9,4 +9,4 @@ VALUES (
 RETURNING *;
 
 -- name: ResetUsers :exec
-TRUNCATE TABLE users;
+DELETE FROM users;
