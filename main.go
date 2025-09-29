@@ -17,12 +17,23 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	secret         string
 }
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL must be set")
+	}
 	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -38,6 +49,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		secret:         secret,
 	}
 
 	fsHandler := http.FileServer(http.Dir(filepathRoot))

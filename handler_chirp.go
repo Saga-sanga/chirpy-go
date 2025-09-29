@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/saga-sanga/chirpy-go/internal/auth"
 	"github.com/saga-sanga/chirpy-go/internal/database"
 )
 
@@ -19,11 +21,19 @@ type Chirp struct {
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string `json:"body"`
-		UserId string `json:"user_id"`
+		Body string `json:"body"`
 	}
-	type response struct {
-		Chirp
+
+	bearerToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Cannot retrieve bearer token", err)
+		return
+	}
+
+	userId, err := auth.ValidateJWT(bearerToken, cfg.secret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Cannot validate token", err)
+		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -41,29 +51,22 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
 	cleaned := profaneCheck(params.Body, profaneWords)
-	userUUID, err := uuid.Parse(params.UserId)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Cannot parse uuid", err)
-		return
-	}
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleaned,
-		UserID: userUUID,
+		UserID: userId,
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Cannot create chirp", err)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, response{
-		Chirp: Chirp{
-			ID:        chirp.ID,
-			CreatedAt: chirp.CreatedAt,
-			UpdatedAt: chirp.UpdatedAt,
-			Body:      chirp.Body,
-			UserId:    chirp.UserID,
-		},
+	respondWithJSON(w, http.StatusCreated, Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserId:    chirp.UserID,
 	})
 }
 

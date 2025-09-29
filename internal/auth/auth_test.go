@@ -1,7 +1,12 @@
 package auth
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestCheckPasswordHash(t *testing.T) {
@@ -55,5 +60,47 @@ func TestCheckPasswordHash(t *testing.T) {
 				t.Errorf("CheckPasswordHash() error = %v, wantErr = %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestValidateJWT(t *testing.T) {
+	secret := "Thisisasecret"
+	userID := uuid.New()
+	jwt1, _ := MakeJWT(userID, secret, time.Hour)
+	jwt2, _ := MakeJWT(userID, secret, 5*time.Second)
+
+	t.Run("Create and Validate token", func(t *testing.T) {
+		actualID, _ := ValidateJWT(jwt1, secret)
+		if userID != actualID {
+			t.Errorf("Want: %q, Got: %q", userID, actualID)
+		}
+	})
+
+	t.Run("Reject wrong secret", func(t *testing.T) {
+		actualID, err := ValidateJWT(jwt2, "wrongsecret")
+		if userID == actualID {
+			t.Errorf("Want: %q, Got: %q, err: %q", userID, actualID, err)
+		}
+	})
+
+	t.Run("Reject expired token", func(t *testing.T) {
+		time.Sleep(5 * time.Second)
+		actualID, err := ValidateJWT(jwt2, secret)
+		t.Logf("Got: %s, Error: %s", actualID, err)
+		if err == nil {
+			t.Errorf("Want Error, Got Error: %q", err)
+		}
+
+	})
+}
+
+func TestGetBearerToken(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	expected := "teststring"
+	request.Header.Set("Authorization", "Bearer "+expected)
+	actual, _ := GetBearerToken(request.Header)
+
+	if actual != expected {
+		t.Errorf("Want %q, Got %q", expected, actual)
 	}
 }
