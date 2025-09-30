@@ -8,3 +8,15 @@ VALUES (
 	$3
 )
 RETURNING *;
+
+-- name: GetRefreshToken :one
+SELECT * FROM refresh_tokens
+WHERE token = $1;
+
+-- name: GetUserFromRefreshToken :one
+SELECT * FROM users
+WHERE id = (
+	SELECT user_id
+	FROM refresh_tokens
+	WHERE token = $1
+);
