@@ -9,13 +9,10 @@ import (
 	"github.com/saga-sanga/chirpy-go/internal/auth"
 )
 
-const DEFAULTEXPIRATION = time.Hour
-
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	type response struct {
 		ID        uuid.UUID `json:"id"`
@@ -44,11 +41,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenExpiration := DEFAULTEXPIRATION
-	if params.ExpiresInSeconds > 0 && params.ExpiresInSeconds < 3600 {
-		tokenExpiration = time.Duration(params.ExpiresInSeconds) * time.Second
-	}
-
+	tokenExpiration := time.Hour
 	accessToken, err := auth.MakeJWT(user.ID, cfg.secret, tokenExpiration)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Cannot generate token", err)
