@@ -15,4 +15,14 @@ ORDER BY created_at;
 
 -- name: GetChirp :one
 SELECT * FROM chirps
-WHERE ID = $1;
+WHERE id = $1;
+
+-- name: DeleteChirp :one
+DELETE FROM chirps
+WHERE id = $1
+RETURNING *;
+
+-- name: GetChirpsByAuthorID :many
+SELECT * FROM chirps
+WHERE user_id = $1
+ORDER BY created_at;
